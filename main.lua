@@ -7,13 +7,13 @@ local splash_finished = false
 local music_started = false
 local scaleX, scaleY
 local bg_alpha = 0
-local fade_duration = 1.5
+local fade_duration = 1.0
 
 local activeBgIndex = nil   -- chapter whose background is currently showing
 local columnZone = nil      -- rectangle covering all buttons plus the gaps between
 
 local chapterBgs = {}       -- [i] = { img = Image, alpha = 0 }
-local BG_FADE_SPEED = 4     -- higher = faster crossfade
+local BG_FADE_SPEED = 7.5     -- higher = faster crossfade
 
 local installedChapters = {}
 local statusText = "Scanning for chapters..."
@@ -121,16 +121,21 @@ local function drawChapterButton(btn)
 
     if btn.img then
         if not installed then
-            love.graphics.setColor(0.4, 0.4, 0.4, 1)
+            -- uninstalled: grayscale, slightly darker
+            love.graphics.setShader(grayscaleShader)
+            love.graphics.setColor(0.6, 0.6, 0.6, 1)
             love.graphics.draw(btn.img, btn.x, btn.y, 0, btn.scale, btn.scale)
+            love.graphics.setShader()
         elseif btn.isHovered then
+            -- installed + hovered: full color
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.draw(btn.img, btn.x, btn.y, 0, btn.scale, btn.scale)
+        else
+            -- installed, not hovered: grayscale
             love.graphics.setShader(grayscaleShader)
             love.graphics.setColor(1, 1, 1, 1)
             love.graphics.draw(btn.img, btn.x, btn.y, 0, btn.scale, btn.scale)
             love.graphics.setShader()
-        else
-            love.graphics.setColor(1, 1, 1, 1)
-            love.graphics.draw(btn.img, btn.x, btn.y, 0, btn.scale, btn.scale)
         end
     else
         local shade = installed and (btn.isHovered and 0.5 or 0.3) or 0.15
@@ -255,9 +260,10 @@ function love.update(dt)
     end
 
     -- Decide which chapter background should be showing
+    -- (only installed chapters can trigger a background change)
     local hoveredIndex = nil
     for _, btn in ipairs(chapterButtons) do
-        if btn.isHovered then
+        if btn.isHovered and installedChapters[btn.index] then
             hoveredIndex = btn.index
             break
         end
@@ -266,11 +272,13 @@ function love.update(dt)
     if hoveredIndex then
         activeBgIndex = hoveredIndex
     elseif activeBgIndex then
-        -- Not on a button: keep the current background while in the gaps,
-        -- clear it only once the cursor leaves the column
+        local overUninstalled = false
+        for _, btn in ipairs(chapterButtons) do
+            if btn.isHovered then overUninstalled = true break end
+        end
         local inColumn = mx >= columnZone.x and mx <= columnZone.x + columnZone.w
                     and my >= columnZone.y and my <= columnZone.y + columnZone.h
-        if not inColumn then
+        if overUninstalled or not inColumn then
             activeBgIndex = nil
         end
     end
