@@ -1,0 +1,9 @@
+name = "PlaytimeLauncher"
+default_targets = []
+build_directory = "makelove-build"
+love_version = "11.5"
+
+love_files = [
+    "+*",
+    "-*/.*",
+]

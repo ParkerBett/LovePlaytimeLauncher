@@ -1,2 +1,5 @@
 *.love
 *.exe
+*.AppImage
+/squashfs-root
+PlaytimeLauncher
